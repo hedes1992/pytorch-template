@@ -1,0 +1,80 @@
+{
+    "name": "Mnist_LeNet",
+    "n_gpu": 1,
+    
+    "arch": {
+        // "type": "MnistModel",
+        "type": "CloudGermanModel1",
+        "args": {
+            "input_channel": 18,
+            "num_classes": 17
+        }
+    },
+    "train_data_loader": {
+        "type": "CloudGermanLoader",
+        "args":{
+            "data_dir": "data/tianchi/cloud_german",
+            "batch_size": 128,
+            "shuffle": true,
+            "validation_split": 0.0,
+            "num_workers": 2,
+            "datatype": "train",
+            "inputtype": "AB"
+        }
+    },
+    "val_data_loader": {
+        "type": "CloudGermanLoader",
+        "args":{
+            "data_dir": "data/tianchi/cloud_german",
+            "batch_size": 128,
+            "shuffle": false,
+            "validation_split": 0.0,
+            "num_workers": 1,
+            "datatype": "valid",
+            "inputtype": "AB"
+        }
+    },
+    "test_data_loader": {
+        "type": "CloudGermanLoader",
+        "args":{
+            "data_dir": "data/tianchi/cloud_german",
+            "batch_size": 128,
+            "shuffle": false,
+            "validation_split": 0.0,
+            "num_workers": 1,
+            "datatype": "test",
+            "inputtype": "AB"
+        }
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args":{
+            "lr": 0.001,
+            "weight_decay": 0,
+            "amsgrad": true
+        }
+    },
+    "loss": "nll_loss",
+    "metrics": [
+        "accuracy_metric", "accuracy_top3_metric", "accuracy_top5_metric"
+    ],
+    "lr_scheduler": {
+        "type": "StepLR",
+        "args": {
+            "step_size": 50,
+            "gamma": 0.1
+        }
+    },
+    "trainer": {
+        "epochs": 100,
+        "save_dir": "saved/",
+        "save_period": 1,
+        "verbosity": 2,
+        
+        "monitor": "min val_loss",
+        "early_stop": 10,
+        
+        "tensorboardX": false,
+        "log_dir": "saved/runs"
+    }
+}
