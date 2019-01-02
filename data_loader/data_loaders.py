@@ -1,7 +1,10 @@
 from torchvision import datasets, transforms
 from base import BaseDataLoader
 
-from cloud_german_dataset import CloudGermanDataset
+from data_loader.cloud_german_dataset import CloudGermanDataset
+
+import pdb
+
 class MnistDataLoader(BaseDataLoader):
     """
     MNIST data loading demo using BaseDataLoader
@@ -19,7 +22,7 @@ class CloudGermanLoader(BaseDataLoader):
     """
     cloud german data loading
     """
-    def __init__(self, data_dir, batch_size, shuffle, num_workers, datatype='train', inputtype='AB'):
+    def __init__(self, data_dir, batch_size, shuffle, validation_split, num_workers, datatype='train', inputtype='AB'):
         self.data_dir   = data_dir
         # 暂时
         trsfm           = None

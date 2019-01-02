@@ -1,9 +1,9 @@
 {
-    "name": "CloudGermanModel1",
-    "n_gpu": 4,
+    "name": "debug",
+    "n_gpu": 1,
     
     "arch": {
-        "type": "CloudGermanModel1",
+        "type": "CloudGermanModel2",
         "args": {
             "input_channel": 18,
             "num_classes": 17
@@ -16,7 +16,7 @@
             "batch_size": 128,
             "shuffle": true,
             "validation_split": 0.0,
-            "num_workers": 4,
+            "num_workers": 0,
             "datatype": "train",
             "inputtype": "AB"
         }

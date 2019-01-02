@@ -9,6 +9,7 @@ import model.model as module_arch
 from trainer import Trainer
 from utils import Logger
 
+import pdb
 
 def get_instance(module, name, config, *args):
     return getattr(module, config[name]['type'])(*args, **config[name]['args'])
@@ -18,6 +19,8 @@ def main(config, resume):
 
     # setup data_loader instances
     train_data_loader = get_instance(module_data, 'train_data_loader', config)
+#    train_data_loader.dataset._stat_mean_std()
+#    pdb.set_trace()
     valid_data_loader = get_instance(module_data, 'valid_data_loader', config)
 
     # build model architecture
