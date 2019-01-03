@@ -132,6 +132,8 @@ class CloudGermanDataset(torch.utils.data.Dataset):
 #            input_x     = self.transform(input_x)
 #        if self.target_transform is not None and target_y is not None:
 #            target_y    = self.target_transform(target_y)
+        if self.datatype == 'test':
+            return input_x
         return input_x, target_y
 
     def __len__(self):

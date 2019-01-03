@@ -1,14 +1,14 @@
 import os
 import argparse
 import torch
-from tqdm import tqdm
 import data_loader.data_loaders as module_data
 import model.loss as module_loss
 import model.metric as module_metric
 import model.model as module_arch
 from train import get_instance
 
-import numpy
+import numpy as np
+import pdb
 
 def main(config, resume, datatype):
     if datatype == 'valid':
@@ -24,6 +24,7 @@ def main(config, resume, datatype):
         #     num_workers=2
         # )
     elif datatype == 'test':
+#        config['test_data_loader']['num_workers']   = 0
         data_loader = get_instance(module_data, 'test_data_loader', config)
         USE_LABEL   = False
     else:
@@ -56,33 +57,39 @@ def main(config, resume, datatype):
         pred_y_list = []
 
     with torch.no_grad():
-        for i, (data, target) in enumerate(tqdm(data_loader)):
-            data, target = data.to(device), target.to(device)
-            output = model(data)
-            #
-            # save sample images, or do something with output here
-            #
-            if USE_LABEL:
+        if USE_LABEL:
+            for i, (data, target) in enumerate(data_loader):
+                if i % 100 == 0:
+                    print("{}/{} start".format(i, len(data_loader)))
+                data, target = data.to(device), target.to(device)
+                output = model(data)
+                #
+                # save sample images, or do something with output here
+                #
                 # computing loss, metrics on test set
                 loss = loss_fn(output, target)
                 batch_size = data.shape[0]
                 total_loss += loss.item() * batch_size
                 for i, metric in enumerate(metric_fns):
                     total_metrics[i] += metric(output, target) * batch_size
-            else:
-                i_pred_y= torch.argmax(output)
-                pred_y_list.append(i_pred)
+        else:
+            for i, data in enumerate(data_loader):
+                if i % 100 == 0:
+                    print("{}/{} start".format(i, len(data_loader)))
+                data    = data.to(device)
+                output  = model(data)
+                i_pred_y= torch.argmax(output,dim=1).tolist()
+                pred_y_list.extend(i_pred_y)
     if USE_LABEL:
         n_samples = len(data_loader.sampler)
         log = {'loss': total_loss / n_samples}
         log.update({met.__name__ : total_metrics[i].item() / n_samples for i, met in enumerate(metric_fns)})
         print(log)
     else:
-        class_num   = config['arch']['num_classes']
+        class_num   = config['arch']['args']['num_classes']
         test_res_path   = resume + '_test_res.csv'
-        pred_y_arr  = np.concatenate(pred_y_list)
-        test_res    = np.zeros((pred_y_arr.shape[0], class_num), dtype=np.int32)
-        for i, i_pred_y in enumerate(pred_y_arr):
+        test_res    = np.zeros((len(pred_y_list), class_num), dtype=np.int32)
+        for i, i_pred_y in enumerate(pred_y_list):
             test_res[i, i_pred_y]   = 1
         np.savetxt(test_res_path, test_res, fmt='%d', delimiter=',')
 
@@ -94,7 +101,7 @@ if __name__ == '__main__':
                            help='path to latest checkpoint (default: None)')
     parser.add_argument('-d', '--device', default=None, type=str,
                            help='indices of GPUs to enable (default: all)')
-    arg_parser.add_argument('--datatype', dest='datatype', \
+    parser.add_argument('--datatype', dest='datatype', \
         help='datatype: valid or test', default='valid', type=str)
 
     args = parser.parse_args()
