@@ -2,9 +2,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 from base import BaseModel
 
-from torchvision.models.resnet import conv3x3, \
-                conv1x1, BasicBlock, Bottleneck
+from torchvision.models.resnet import BasicBlock, Bottleneck
 import pdb
+
+# copy from resnet.py from torchvision.models
+def conv1x1(in_planes, out_planes, stride=1):
+    """1x1 convolution"""
+    return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
 
 class MnistModel(BaseModel):
     def __init__(self, num_classes=10):
@@ -79,7 +83,7 @@ class cgResNet(BaseModel):
         self.inplanes   = 64
         self.conv1      = nn.Conv2d(input_channel, 64, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1        = nn.BatchNorm2d(64)
-        self.relu       = nn.Relu(inplace=True)
+        self.relu       = nn.ReLU(inplace=True)
         self.maxpool    = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
@@ -136,24 +140,47 @@ class cgResNet(BaseModel):
         x = x.view(x.size(0), -1)
         x = self.fc(x)
 
-        return x
-class cgresnet18(cgResNet):
+        return F.log_softmax(x, dim=1)
+#        return x
+
+class cgResnet18(cgResNet):
     def __init__(self, input_channel=18, num_classes=17, zero_init_residual=False):
         block   = BasicBlock
         layers  = [2,2,2,2]
-        super(cgresnet18, self).__init__(block=block, layers=layers, input_channel=input_channel, \
+        super(cgResnet18, self).__init__(block=block, layers=layers, input_channel=input_channel, \
             num_classes=num_classes, zero_init_residual=zero_init_residual)
 
-class cgresnet34(cgResNet):
+class cgResnet34(cgResNet):
     def __init__(self, input_channel=18, num_classes=17, zero_init_residual=False):
         block   = BasicBlock
         layers  = [3,4,6,3]
-        super(cgresnet34, self).__init__(block=block, layers=layers, input_channel=input_channel, \
+        super(cgResnet34, self).__init__(block=block, layers=layers, input_channel=input_channel, \
             num_classes=num_classes, zero_init_residual=zero_init_residual)
 
-class cgresnet50(cgResNet):
+class cgResnet34_3stage(cgResNet):
+    def __init__(self, input_channel=18, num_classes=17, zero_init_residual=False):
+        block   = BasicBlock
+        layers  = [3,4,3,0]
+        super(cgResnet34_3stage, self).__init__(block=block, layers=layers, input_channel=input_channel, \
+            num_classes=num_classes, zero_init_residual=zero_init_residual)
+
+class cgResnet34_1stage(cgResNet):
+    def __init__(self, input_channel=18, num_classes=17, zero_init_residual=False):
+        block   = BasicBlock
+        layers  = [3,0,0,0]
+        super(cgResnet34_1stage, self).__init__(block=block, layers=layers, input_channel=input_channel, \
+            num_classes=num_classes, zero_init_residual=zero_init_residual)
+
+class cgResnet34_0stage(cgResNet):
+    def __init__(self, input_channel=18, num_classes=17, zero_init_residual=False):
+        block   = BasicBlock
+        layers  = [0,0,0,0]
+        super(cgResnet34_0stage, self).__init__(block=block, layers=layers, input_channel=input_channel, \
+            num_classes=num_classes, zero_init_residual=zero_init_residual)
+
+class cgResnet50(cgResNet):
     def __init__(self, input_channel=18, num_classes=17, zero_init_residual=False):
         block   = Bottleneck
         layers  = [3,4,6,3]
-        super(cgresnet50, self).__init__(block=block, layers=layers, input_channel=input_channel, \
+        super(cgResnet50, self).__init__(block=block, layers=layers, input_channel=input_channel, \
             num_classes=num_classes, zero_init_residual=zero_init_residual)

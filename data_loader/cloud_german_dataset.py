@@ -7,6 +7,15 @@ import h5py, pdb
 
 from data_loader.utils import makedir_exist_ok
 
+def horizontal_flip_np(input_x):
+#    return np.flip(input_x, axis=2)
+#    return input_x[:, :, ::-1]
+    return np.flip(input_x, axis=2).copy()
+def vertical_flip_np(input_x):
+#    return np.flip(input_x, axis=1)
+#    return input_x[:, ::-1, :]
+    return np.flip(input_x, axis=1).copy()
+
 class CloudGermanDataset(torch.utils.data.Dataset):
     """
     cloud german dataset
@@ -47,6 +56,7 @@ class CloudGermanDataset(torch.utils.data.Dataset):
 
         self._check_exists()
         self.dataA, self.dataB, self.targets = self._load_data()
+        self.dataProb   = np.random.random((len(self), ))
 
     def _check_exists(self):
         assert osp.exists(self.training_file_path), "training file: {} not exist".format(self.training_file_path)
@@ -99,6 +109,19 @@ class CloudGermanDataset(torch.utils.data.Dataset):
         print("mean of mean_arr:(shape is {}) is {}".format(np.mean(mean_arr, axis=0), mean_arr.shape))
         print("mean of std_arr:(shape is {}) is {}".format(np.mean(std_arr, axis=0), std_arr.shape))
 
+    def _stat_cls(self):
+        """
+        statistics on training data for class num
+        """
+        total_num   = len(self)
+        cls_num_arr = np.zeros((self.class_num, ))
+        for i in range(total_num):
+            if i % 5000 == 0:
+                print("{}/{} stated".format(i, total_num))
+            _, y_label  = self.__getitem__(i)
+            cls_num_arr[y_label] += 1.0
+        print("class num of training set is: {}".format(cls_num_arr))
+
     def __getitem__(self, index):
         """
         get i-th item
@@ -127,6 +150,13 @@ class CloudGermanDataset(torch.utils.data.Dataset):
         # channel维度在第0维
         input_x     = np.concatenate([input_x_A, input_x_B], axis=0)
         target_y        = self.targets[index]
+
+        USE_transform   = True and self.datatype == 'train'
+        if USE_transform:
+            if self.dataProb[index] > 0.5:
+                input_x = horizontal_flip_np(input_x)
+                if self.dataProb[index] > 0.9:
+                    input_x = vertical_flip_np(input_x)
 
 #        if self.transform is not None:
 #            input_x     = self.transform(input_x)

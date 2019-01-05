@@ -20,6 +20,7 @@ def main(config, resume):
     # setup data_loader instances
     train_data_loader = get_instance(module_data, 'train_data_loader', config)
 #    train_data_loader.dataset._stat_mean_std()
+#    train_data_loader.dataset._stat_cls()
 #    pdb.set_trace()
     valid_data_loader = get_instance(module_data, 'valid_data_loader', config)
 
