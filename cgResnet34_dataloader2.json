@@ -1,5 +1,5 @@
 {
-    "name": "cgResnet34",
+    "name": "cgResnet34_dataloader2",
     "n_gpu": 4,
     
     "arch": {
@@ -10,7 +10,7 @@
         }
     },
     "train_data_loader": {
-        "type": "CloudGermanLoader",
+        "type": "CloudGermanLoader2",
         "args":{
             "data_dir": "data/tianchi/cloud_german",
             "batch_size": 128,
@@ -22,7 +22,7 @@
         }
     },
     "valid_data_loader": {
-        "type": "CloudGermanLoader",
+        "type": "CloudGermanLoader2",
         "args":{
             "data_dir": "data/tianchi/cloud_german",
             "batch_size": 128,

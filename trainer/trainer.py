@@ -3,6 +3,7 @@ import torch
 from torchvision.utils import make_grid
 from base import BaseTrainer
 
+import pdb
 
 class Trainer(BaseTrainer):
     """
@@ -61,6 +62,8 @@ class Trainer(BaseTrainer):
             loss = self.loss(output, target)
             loss.backward()
             self.optimizer.step()
+            output = self.model(data)
+            loss = self.loss(output, target)
 
             self.writer.set_step((epoch - 1) * len(self.data_loader) + batch_idx)
             self.writer.add_scalar('loss', loss.item())
@@ -100,6 +103,7 @@ class Trainer(BaseTrainer):
             The validation metrics in log must have the key 'val_metrics'.
         """
         self.model.eval()
+#        self.model.train()
         total_val_loss = 0
         total_val_metrics = np.zeros(len(self.metrics))
         with torch.no_grad():

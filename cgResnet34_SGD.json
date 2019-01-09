@@ -1,5 +1,5 @@
 {
-    "name": "cgResnet34",
+    "name": "cgResnet34_SGD",
     "n_gpu": 4,
     
     "arch": {
@@ -46,11 +46,12 @@
         }
     },
     "optimizer": {
-        "type": "Adam",
+        "type": "SGD",
         "args":{
             "lr": 0.001,
             "weight_decay": 0.0001,
-            "amsgrad": true
+            "momentum": 0.9,
+            "nesterov": true
         }
     },
     "loss": "nll_loss",
@@ -66,8 +67,8 @@
     "lr_scheduler": {
         "type": "StepLR",
         "args": {
-            "step_size": 10,
-            "gamma": 0.3
+            "step_size": 2,
+            "gamma": 0.1
         }
     },
     "trainer": {

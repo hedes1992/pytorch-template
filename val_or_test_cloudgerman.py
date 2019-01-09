@@ -24,7 +24,7 @@ def main(config, resume, datatype):
         #     num_workers=2
         # )
     elif datatype == 'test':
-#        config['test_data_loader']['num_workers']   = 0
+        config['test_data_loader']['num_workers']   = 4
         data_loader = get_instance(module_data, 'test_data_loader', config)
         USE_LABEL   = False
     else:

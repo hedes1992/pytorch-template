@@ -2,6 +2,7 @@
 from __future__ import print_function
 import os.path as osp
 import numpy as np
+import scipy.ndimage as ndi
 import torch
 import h5py, pdb
 
@@ -15,6 +16,8 @@ def vertical_flip_np(input_x):
 #    return np.flip(input_x, axis=1)
 #    return input_x[:, ::-1, :]
     return np.flip(input_x, axis=1).copy()
+def rotate_np(input_x, angle=90):
+    return ndi.rotate(input_x, angle=angle, axes=(1,2)).copy()
 
 class CloudGermanDataset(torch.utils.data.Dataset):
     """
@@ -22,9 +25,11 @@ class CloudGermanDataset(torch.utils.data.Dataset):
     Args:
         root(string): root directory to save h5 file
     """
-    training_file   = 'training.h5'
+#    training_file   = 'training.h5'
+    training_file   = 'validation.h5'
     valid_file      = 'validation.h5'
-    test_file       = 'round1_test_a_20181109.h5'
+#    test_file       = 'round1_test_a_20181109.h5'
+    test_file       = 'round1_test_b_20190104.h5'
 
     classes         = ['LCZ-1', 'LCZ-2','LCZ-3','LCZ-4','LCZ-5','LCZ-6','LCZ-7','LCZ-8','LCZ-9','LCZ-10',
                         'LCZ-A','LCZ-B','LCZ-C','LCZ-D','LCZ-E','LCZ-F','LCZ-G']
@@ -39,6 +44,16 @@ class CloudGermanDataset(torch.utils.data.Dataset):
                 0.94647736, 0.14515599, 0.09256628]
     std_B   = [0.01514473, 0.01787005, 0.0237855, 0.02031125, 0.02770328, 0.03284229, \
                 0.03837105, 0.03622275, 0.02952162, 0.02598372]
+    val_mean_A      = [-7.79645376e-04,-3.22928012e-04,-5.28861207e-04,4.19210989e-04,\
+                2.55695569e-02,1.58903553e-02,-4.35594337e-03,-1.18680329e-02]
+    val_mean_B      = [3.44266926e-01,3.98243773e-01,4.64785327e-01,4.77067593e-01,\
+                1.90574629e-01,1.43163929e-01,1.16378374e-01,1.44059688e-01,\
+                6.53471129e-01,7.15182936e-01]
+    val_std_A       = [1.05691171,1.05671418,1.07256043,1.07437526,\
+            0.9467642,0.94921903,0.82352269,0.96492248]
+    val_std_B       = [1.01470382,1.01730838,1.06274009,1.04186557,\
+            0.98543235,0.98849942,0.97952031,1.00031085,\
+            1.15153413,1.22456071]
     USE_INPUT_NORMALIZE = True
 
     def __init__(self, root, datatype='train', inputtype='AB', transform=None, target_transform=None):
@@ -86,7 +101,7 @@ class CloudGermanDataset(torch.utils.data.Dataset):
         else:
             label_y = [None] * len(sen1_x)
 
-#        USE_NUM = 2048
+#        USE_NUM = min(2048, len(sen1_x))
 #        return sen1_x[:USE_NUM, ...], sen2_x[:USE_NUM, ...], label_y[:USE_NUM, ...]
         return sen1_x, sen2_x, label_y
 
@@ -138,13 +153,24 @@ class CloudGermanDataset(torch.utils.data.Dataset):
         input_x_B   = np.asarray(self.dataB[index, ...], dtype=np.float32).transpose((2,0,1))
         
         if self.USE_INPUT_NORMALIZE:
+#            if self.datatype == 'train':
+            if True:
+                use_mean_A  = self.mean_A
+                use_mean_B  = self.mean_B
+                use_std_A   = self.std_A
+                use_std_B   = self.std_B
+#            elif self.datatype == 'valid':
+#                use_mean_A  = self.val_mean_A
+#                use_mean_B  = self.val_mean_B
+#                use_std_A   = self.val_std_A
+#                use_std_B   = self.val_std_B
             for j in range(self.A_channel_num):
                 j_val   = input_x_A[j, ...]
-                j_val   = (j_val - self.mean_A[j]) / self.std_A[j]
+                j_val   = (j_val - use_mean_A[j]) / use_std_A[j]
                 input_x_A[j, ...]   = j_val
             for j in range(self.B_channel_num):
                 j_val   = input_x_B[j, ...]
-                j_val   = (j_val - self.mean_B[j]) / self.std_B[j]
+                j_val   = (j_val - use_mean_B[j]) / use_std_B[j]
                 input_x_B[j, ...]   = j_val
 
         # channel维度在第0维
@@ -152,11 +178,11 @@ class CloudGermanDataset(torch.utils.data.Dataset):
         target_y        = self.targets[index]
 
         USE_transform   = True and self.datatype == 'train'
-        if USE_transform:
-            if self.dataProb[index] > 0.5:
-                input_x = horizontal_flip_np(input_x)
-                if self.dataProb[index] > 0.9:
-                    input_x = vertical_flip_np(input_x)
+#        if USE_transform:
+#            if self.dataProb[index] > 0.5:
+#                input_x = horizontal_flip_np(input_x)
+#                if self.dataProb[index] > 0.9:
+#                    input_x = vertical_flip_np(input_x)
 
 #        if self.transform is not None:
 #            input_x     = self.transform(input_x)
@@ -172,3 +198,122 @@ class CloudGermanDataset(torch.utils.data.Dataset):
     @property
     def class_to_idx(self):
         return {_class: i for i, _class in enumerate(self.classes)}
+
+class CloudGermanDataset4(CloudGermanDataset):
+    """
+    want to use data augmentation using numpy
+    """
+    def __getitem__(self, index):
+        input_x_A   = np.asarray(self.dataA[index, ...], dtype=np.float32).transpose((2,0,1))
+        input_x_B   = np.asarray(self.dataB[index, ...], dtype=np.float32).transpose((2,0,1))
+        
+        if self.USE_INPUT_NORMALIZE:
+            for j in range(self.A_channel_num):
+                j_val   = input_x_A[j, ...]
+#               j_val   = (j_val - self.val_mean_A[j]) / self.val_std_A[j]
+                j_val   = (j_val - self.mean_A[j]) / self.std_A[j]
+                input_x_A[j, ...]   = j_val
+            for j in range(self.B_channel_num):
+                j_val   = input_x_B[j, ...]
+#                j_val   = (j_val - self.val_mean_B[j]) / self.val_std_B[j]
+                j_val   = (j_val - self.mean_B[j]) / self.std_B[j]
+                input_x_B[j, ...]   = j_val
+
+        # channel维度在第0维
+        input_x     = np.concatenate([input_x_A, input_x_B], axis=0)
+        target_y        = self.targets[index]
+
+        USE_transform   = True and self.datatype == 'train'
+        if USE_transform:
+            if self.dataProb[index] > 0.8:
+                input_x = horizontal_flip_np(input_x)
+                if self.dataProb[index] > 0.9:
+                    input_x = vertical_flip_np(input_x)
+            else:
+                if self.dataProb[index] < 0.1:
+                    if self.dataProb[index] < 0.5:
+                        input_x = rotate_np(input_x, 90)
+                    else:
+                        input_x = rotate_np(input_x, 270)
+
+        if self.datatype == 'test':
+            return input_x
+        return input_x, target_y
+
+class CloudGermanDataset3(CloudGermanDataset):
+    """
+    want to use data augmentation using numpy
+    """
+    def __getitem__(self, index):
+        input_x_A   = np.asarray(self.dataA[index, ...], dtype=np.float32).transpose((2,0,1))
+        input_x_B   = np.asarray(self.dataB[index, ...], dtype=np.float32).transpose((2,0,1))
+        
+        if self.USE_INPUT_NORMALIZE:
+            for j in range(self.A_channel_num):
+                j_val   = input_x_A[j, ...]
+                j_val   = (j_val - self.mean_A[j]) / self.std_A[j]
+                input_x_A[j, ...]   = j_val
+            for j in range(self.B_channel_num):
+                j_val   = input_x_B[j, ...]
+                j_val   = (j_val - self.mean_B[j]) / self.std_B[j]
+                input_x_B[j, ...]   = j_val
+
+        # channel维度在第0维
+        input_x     = np.concatenate([input_x_A, input_x_B], axis=0)
+        target_y        = self.targets[index]
+
+        USE_transform   = True and self.datatype == 'train'
+        if USE_transform:
+            if self.dataProb[index] > 0.8:
+                input_x = horizontal_flip_np(input_x)
+                if self.dataProb[index] > 0.9:
+                    input_x = vertical_flip_np(input_x)
+            else:
+                if self.dataProb[index] < 0.1:
+                    if self.dataProb[index] < 0.5:
+                        input_x = rotate_np(input_x, 90)
+                    else:
+                        input_x = rotate_np(input_x, 270)
+
+        if self.datatype == 'test':
+            return input_x
+        return input_x, target_y
+
+    def __len__(self):
+        return len(self.dataA)
+
+class CloudGermanDataset2(CloudGermanDataset):
+    """
+    want to use more data augmentation
+    """
+    def __getitem__(self, index):
+        """
+        get i-th item
+        """
+        input_x_A   = np.asarray(self.dataA[index, ...], dtype=np.float32).transpose((2,0,1))
+        input_x_B   = np.asarray(self.dataB[index, ...], dtype=np.float32).transpose((2,0,1))
+        
+        if self.USE_INPUT_NORMALIZE:
+            for j in range(self.A_channel_num):
+                j_val   = input_x_A[j, ...]
+                j_val   = (j_val - self.mean_A[j]) / self.std_A[j]
+                input_x_A[j, ...]   = j_val
+            for j in range(self.B_channel_num):
+                j_val   = input_x_B[j, ...]
+                j_val   = (j_val - self.mean_B[j]) / self.std_B[j]
+                input_x_B[j, ...]   = j_val
+
+        # channel维度在第0维
+        input_x     = np.concatenate([input_x_A, input_x_B], axis=0)
+        target_y        = self.targets[index]
+
+        USE_transform   = True and self.datatype == 'train'
+        if USE_transform and self.transform is not None:
+            input_x_list= [np.asarray(input_x[i*3:(i+1)*3, ...]*128+128, dtype=np.uint8) for i in range(6)]
+            new_input_x_list    = [self.transform(ele) for ele in input_x_list]
+            input_x     = torch.cat(new_input_x_list, dim=0)
+            
+        if self.datatype == 'test':
+            return input_x
+        return input_x, target_y
+

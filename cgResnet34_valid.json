@@ -1,5 +1,5 @@
 {
-    "name": "cgResnet34",
+    "name": "cgResnet34_valid",
     "n_gpu": 4,
     
     "arch": {
@@ -14,7 +14,7 @@
         "args":{
             "data_dir": "data/tianchi/cloud_german",
             "batch_size": 128,
-            "shuffle": true,
+            "shuffle": false,
             "validation_split": 0.0,
             "num_workers": 4,
             "datatype": "train",
